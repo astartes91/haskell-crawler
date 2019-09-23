@@ -8,8 +8,8 @@ module Lib
   ) where
 
 -- http server
-import           Network.HTTP.Types (status200)
-import           Network.Wai (Application, responseLBS)
+import           Network.HTTP.Types       (status200)
+import           Network.Wai              (Application, responseLBS)
 import           Network.Wai.Handler.Warp (run)
 
 -- only for multiline string literals
