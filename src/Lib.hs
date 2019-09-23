@@ -20,7 +20,7 @@ portNumber :: Int
 portNumber = 8080
 
 -- this request handler responds with hardcoded json on EVERY request
-app :: Application
+app :: Application -- Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 app _ respond = do
   putStrLn "There was a request"
   respond $
