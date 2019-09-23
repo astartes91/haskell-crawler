@@ -2,3 +2,4 @@
 .idea/
 haskell-crawler.cabal
 *~
+*.iml
