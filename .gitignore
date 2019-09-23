@@ -1,3 +1,5 @@
 .stack-work/
+.idea/
 haskell-crawler.cabal
 *~
+*.iml
