@@ -19,7 +19,7 @@ import           Text.RawString.QQ
 import Network.Wreq (get, responseBody)
 import qualified Data.ByteString.Lazy.Internal as B
 import Control.Exception (try, SomeException)
-import Control.Lens
+import Control.Lens ((^.))
 
 -- configuration
 portNumber :: Int
