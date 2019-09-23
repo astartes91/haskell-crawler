@@ -28,6 +28,9 @@ dependencies:
 - http-types == 0.12.3
 # multiline string literals
 - raw-strings-qq == 1.1
+- bytestring
+- lens
+- wreq
 
 library:
   source-dirs: src

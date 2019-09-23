@@ -4,7 +4,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 
 module Lib
-  ( startServer
+  ( startServer, makeRequest
   ) where
 
 -- http server
@@ -14,6 +14,11 @@ import           Network.Wai.Handler.Warp (run)
 
 -- only for multiline string literals
 import           Text.RawString.QQ
+
+import Network.Wreq
+import qualified Data.ByteString.Lazy.Internal as B
+import Control.Exception
+import Control.Lens
 
 -- configuration
 portNumber :: Int
@@ -72,3 +77,11 @@ startServer :: IO ()
 startServer = do
   putStrLn $ "Server started at http://localhost:" ++ show portNumber
   run portNumber app
+
+makeRequest :: String -> IO (Either SomeException B.ByteString)
+makeRequest url =
+      do
+      res <- try $ get url
+      return $ case res of 
+          Right response -> Right(response ^. responseBody)
+          Left e -> Left e
