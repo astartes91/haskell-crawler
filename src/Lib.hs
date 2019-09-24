@@ -1,4 +1,4 @@
--- OverloadedStrings implicitly [Char] to ByteString or Text
+-- OverloadedStrings implicitly converts [Char] to ByteString or Text
 -- QuasiQuotes is used only for multiline string literals between [r| |]
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
@@ -15,10 +15,11 @@ import           Network.Wai.Handler.Warp (run)
 -- only for multiline string literals
 import           Text.RawString.QQ
 
-import Network.Wreq
+-- http client related
+import Network.Wreq (get, responseBody)
 import qualified Data.ByteString.Lazy.Internal as B
-import Control.Exception
-import Control.Lens
+import Control.Exception (try, SomeException)
+import Control.Lens ((^.))
 
 -- configuration
 portNumber :: Int
@@ -27,7 +28,9 @@ portNumber = 8080
 -- this request handler responds with hardcoded json on EVERY request
 app :: Application -- Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 app _ respond = do
-  putStrLn "There was a request"
+  putStrLn "There was a request. Fetching Yandex now!"
+  eitherExceptionString <- makeRequest "https://ya.ru"
+  putStrLn $ take 1000 $ "Fetching result: " ++ show eitherExceptionString
   respond $
     responseLBS
       status200
@@ -79,9 +82,4 @@ startServer = do
   run portNumber app
 
 makeRequest :: String -> IO (Either SomeException B.ByteString)
-makeRequest url =
-      do
-      res <- try $ get url
-      return $ case res of 
-          Right response -> Right(response ^. responseBody)
-          Left e -> Left e
+makeRequest = fmap (fmap (^. responseBody)) . try . get

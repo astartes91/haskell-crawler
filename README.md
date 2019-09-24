@@ -15,6 +15,12 @@ Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/#how-to-i
 ```bash
 # run and watch files
 stack build --exec haskell-crawler-exe
+
+# test it!
+curl "http://localhost:8080/"\
+      --header "Content-Type: application/json"\
+      --request POST\
+      --data '["https://ya.ru", "https://google.com"]'
 ```
 
 ## Other useful commands

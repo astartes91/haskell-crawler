@@ -20,17 +20,14 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/haskell-crawler#readme>
 
 dependencies:
-# standard library
-- base == 4.12.0.0
-# http server
-- wai == 3.2.2.1
-- warp == 3.2.28
-- http-types == 0.12.3
-# multiline string literals
-- raw-strings-qq == 1.1
-- bytestring
-- lens
-- wreq
+- base == 4.12.0.0 # standard library
+- wai == 3.2.2.1 # http server
+- warp == 3.2.28 # http server
+- http-types == 0.12.3 # http server
+- raw-strings-qq == 1.1 # multiline string literals
+- bytestring == 0.10.8.2
+- lens == 4.17.1 # api for http client
+- wreq == 0.5.3.2 # http client
 
 library:
   source-dirs: src
