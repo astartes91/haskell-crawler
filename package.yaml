@@ -20,17 +20,18 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/haskell-crawler#readme>
 
 dependencies:
-- base == 4.12.0.0 # standard library
-- unordered-containers==0.2.10.0
+- base >= 4.12.0.0 # standard library
+- bytestring >= 0.10.8.2
+- unordered-containers >= 0.2.10.0 # hashmap for json response
 - either >= 5.0.1.1 # Data.Either utils
-- wai == 3.2.2.1 # http server
-- warp == 3.2.28 # http server
-- http-types == 0.12.3 # http server
-- bytestring == 0.10.8.2
-- lens == 4.17.1 # api for http client
-- wreq == 0.5.3.2 # http client
+- wai >= 3.2.2.1 # http server
+- warp >= 3.2.28 # http server
+- http-types >= 0.12.3 # http server
 - parsec >= 3.1.13.0 # parsing
-- aeson >= 1.4.5.0
+- aeson >= 1.4.5.0 # parsing, serializing
+- http-conduit >= 2.3.7.1 # http client
+- network >= 2.8.0.1 # http client
+- connection >= 0.3.1 # http client
 
 library:
   source-dirs: src
