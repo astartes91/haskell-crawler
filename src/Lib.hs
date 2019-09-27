@@ -12,10 +12,11 @@ import qualified Data.ByteString.Lazy.Internal as L
 import           Data.Either.Combinators       (mapBoth, mapLeft)
 import           Data.List                     (intercalate)
 import           Data.Maybe                    (fromMaybe)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as Map
 
 -- parsing
 import qualified Data.Aeson                    as A
---import Data.Aeson (ToJSON(..))
 import GHC.Generics
 import Data.Aeson
 import qualified Text.Parsec                   as P
@@ -44,12 +45,6 @@ data CrawlerError
   | Redirect Url
   | NoTitle
   deriving (Show)
-
--- data CrawlerResult = CrawlerResult { 
---   url :: String, errorMessage :: String, title :: String
--- } deriving (Generic, Show)
-
--- instance ToJSON CrawlerResult
 
 -- configuration
 portNumber :: Int
@@ -88,16 +83,11 @@ parseTitle :: L.ByteString -> Either CrawlerError String
 parseTitle = mapLeft (const NoTitle) . P.parse (P.count 30 P.anyChar) ""
 
 serializeResponses :: [(Url, Either CrawlerError PageTitle)] -> L.ByteString
-serializeResponses xs = L.packChars $ "[" ++ intercalate ", " (fmap serializeResponse xs) ++ "]"
-  --encode $ map createCrawlerResult xs
+serializeResponses xs = encode $ map createCrawlerResult xs
 
--- createCrawlerResult :: (Url, Either CrawlerError PageTitle) -> CrawlerResult
--- createCrawlerResult (url, Left e) = CrawlerResult url (show e) ""
--- createCrawlerResult (url, Right title) = CrawlerResult url "" title
-
-serializeResponse :: (Url, Either CrawlerError PageTitle) -> String
-serializeResponse (url, Left e) = "{ \"url\":\"" ++ url ++ "\", \"error\":\"" ++ show e ++ "\"}"
-serializeResponse (url, Right title) = "{ \"url\":\"" ++ url ++ "\", \"title\":\"" ++ title ++ "\"}"
+createCrawlerResult :: (Url, Either CrawlerError PageTitle) -> HashMap String String
+createCrawlerResult (url, Left e) = Map.fromList [("url", url),("error", show e)]
+createCrawlerResult (url, Right title) = Map.fromList [("url", url),("title", title)]
 
 buildResponse :: L.ByteString -> Response
 buildResponse = responseLBS status200 [(hContentType, B.packChars "application/json")]
