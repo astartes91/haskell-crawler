@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+
 module Lib
   ( startServer
   ) where
@@ -12,6 +15,9 @@ import           Data.Maybe                    (fromMaybe)
 
 -- parsing
 import qualified Data.Aeson                    as A
+--import Data.Aeson (ToJSON(..))
+import GHC.Generics
+import Data.Aeson
 import qualified Text.Parsec                   as P
 
 -- http server
@@ -38,6 +44,12 @@ data CrawlerError
   | Redirect Url
   | NoTitle
   deriving (Show)
+
+-- data CrawlerResult = CrawlerResult { 
+--   url :: String, errorMessage :: String, title :: String
+-- } deriving (Generic, Show)
+
+-- instance ToJSON CrawlerResult
 
 -- configuration
 portNumber :: Int
@@ -77,6 +89,11 @@ parseTitle = mapLeft (const NoTitle) . P.parse (P.count 30 P.anyChar) ""
 
 serializeResponses :: [(Url, Either CrawlerError PageTitle)] -> L.ByteString
 serializeResponses xs = L.packChars $ "[" ++ intercalate ", " (fmap serializeResponse xs) ++ "]"
+  --encode $ map createCrawlerResult xs
+
+-- createCrawlerResult :: (Url, Either CrawlerError PageTitle) -> CrawlerResult
+-- createCrawlerResult (url, Left e) = CrawlerResult url (show e) ""
+-- createCrawlerResult (url, Right title) = CrawlerResult url "" title
 
 serializeResponse :: (Url, Either CrawlerError PageTitle) -> String
 serializeResponse (url, Left e) = "{ \"url\":\"" ++ url ++ "\", \"error\":\"" ++ show e ++ "\"}"
