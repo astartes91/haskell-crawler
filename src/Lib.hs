@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DeriveAnyClass    #-}
-
 module Lib
   ( startServer
   ) where
@@ -17,8 +14,6 @@ import qualified Data.HashMap.Strict as Map
 
 -- parsing
 import qualified Data.Aeson                    as A
-import GHC.Generics
-import Data.Aeson
 import qualified Text.Parsec                   as P
 
 -- http server
@@ -83,7 +78,7 @@ parseTitle :: L.ByteString -> Either CrawlerError String
 parseTitle = mapLeft (const NoTitle) . P.parse (P.count 30 P.anyChar) ""
 
 serializeResponses :: [(Url, Either CrawlerError PageTitle)] -> L.ByteString
-serializeResponses xs = encode $ map createCrawlerResult xs
+serializeResponses xs = A.encode $ map createCrawlerResult xs
 
 createCrawlerResult :: (Url, Either CrawlerError PageTitle) -> HashMap String String
 createCrawlerResult (url, Left e) = Map.fromList [("url", url),("error", show e)]
