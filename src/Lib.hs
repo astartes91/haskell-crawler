@@ -1,85 +1,86 @@
--- OverloadedStrings implicitly converts [Char] to ByteString or Text
--- QuasiQuotes is used only for multiline string literals between [r| |]
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-
 module Lib
-  ( startServer, makeRequest
+  ( startServer
   ) where
 
--- http server
-import           Network.HTTP.Types       (status200)
-import           Network.Wai              (Application, responseLBS)
-import           Network.Wai.Handler.Warp (run)
+import           Control.Exception             (SomeException, displayException,
+                                                toException, try)
+import qualified Data.ByteString.Internal      as B
+import qualified Data.ByteString.Lazy.Internal as L
+import           Data.Either.Combinators       (mapBoth, mapLeft)
+import           Data.List                     (intercalate)
+import           Data.Maybe                    (fromMaybe)
 
--- only for multiline string literals
-import           Text.RawString.QQ
+-- parsing
+import qualified Data.Aeson                    as A
+import qualified Text.Parsec                   as P
+
+-- http server
+import           Network.HTTP.Types            (ResponseHeaders, hContentType,
+                                                status200)
+import           Network.Wai                   (Application, Request, Response,
+                                                requestBody, requestHeaders,
+                                                requestMethod, responseLBS)
+import           Network.Wai.Handler.Warp      (run)
 
 -- http client related
-import Network.Wreq (get, responseBody)
-import qualified Data.ByteString.Lazy.Internal as B
-import Control.Exception (try, SomeException)
-import Control.Lens ((^.))
+import           Control.Lens                  ((^.))
+import           Network.Wreq                  (get, responseBody)
+import qualified Network.Wreq                  as Wreq
+
+type Url = String -- TODO: refactor to newtype
+
+type PageTitle = String -- TODO: refactor to newtype
+
+data CrawlerError
+  = InvalidUrl
+  | InaccessibleHost
+  | BadResponse
+  | Redirect Url
+  | NoTitle
+  deriving (Show)
 
 -- configuration
 portNumber :: Int
 portNumber = 8080
-
--- this request handler responds with hardcoded json on EVERY request
-app :: Application -- Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
-app _ respond = do
-  putStrLn "There was a request. Fetching Yandex now!"
-  eitherExceptionString <- makeRequest "https://ya.ru"
-  putStrLn $ take 1000 $ "Fetching result: " ++ show eitherExceptionString
-  respond $
-    responseLBS
-      status200
-      [("Content-Type", "application/json")]
-      [r|
-        [
-           {
-             "url": "https://ya.ru",
-             "title": "Яндекс"
-           },
-           {
-             "url": "www.dictionary.com/browse/http",
-             "title": "Http | Define Http at Dictionary.com"
-           },
-           {
-             "url": "https://api.github.com/",
-             "error": "Page has no title"
-           },
-           {
-             "url": "http://ya.ru",
-             "error": "Redirect: https://ya.ru/"
-           },
-           {
-             "url": "wtf://yandex.ru",
-             "error": "Bad url"
-           },
-           {
-             "url": "https://github.com/ladsgfadg",
-             "error": "Status code: 404"
-           },
-           {
-             "url": "adsfgasdfg",
-             "error": "Inaccessible host"
-           },
-           {
-             "url": "",
-             "error": "Inaccessible host"
-           },
-           {
-             "url": "https://ya.ru",
-             "title": "Яндекс"
-           }
-         ]
-         |]
 
 startServer :: IO ()
 startServer = do
   putStrLn $ "Server started at http://localhost:" ++ show portNumber
   run portNumber app
 
-makeRequest :: String -> IO (Either SomeException B.ByteString)
-makeRequest = fmap (fmap (^. responseBody)) . try . get
+-- type Application = Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+app :: Application
+app req respond = do
+  urls <- parseRequest req :: IO [String]
+  pageBodies <- mapM makeRequest urls :: IO [(Url, Either CrawlerError L.ByteString)]
+  let pageTitles = fmap (fmap (>>= parseTitle)) pageBodies :: [(Url, Either CrawlerError String)]
+  let jsonResponse = serializeResponses pageTitles :: L.ByteString
+  respond $ buildResponse jsonResponse
+
+-- IO intentionally fails if parsing failed, which causes a response with error code
+parseRequest :: Request -> IO [String]
+parseRequest req = do
+  let method = requestMethod req
+  jsonRequestBody <- requestBody req -- TODO: переделать на новый API: getRequestBodyChunk
+  maybe (fail "damn!") return (A.decodeStrict jsonRequestBody :: Maybe [String]) -- TODO: explicitly respond with 4xx
+
+makeRequest :: String -> IO (Url, Either CrawlerError L.ByteString)
+makeRequest url = fmap (\x -> (url, mapBoth describeError extractBody x)) ioEither
+  where
+    describeError = const BadResponse
+    extractBody = (^. responseBody)
+    ioEither = try . get $ url :: IO (Either SomeException (Wreq.Response L.ByteString))
+
+-- mock parser function, only takes 30 chars
+parseTitle :: L.ByteString -> Either CrawlerError String
+parseTitle = mapLeft (const NoTitle) . P.parse (P.count 30 P.anyChar) ""
+
+serializeResponses :: [(Url, Either CrawlerError PageTitle)] -> L.ByteString
+serializeResponses xs = L.packChars $ "[" ++ intercalate ", " (fmap serializeResponse xs) ++ "]"
+
+serializeResponse :: (Url, Either CrawlerError PageTitle) -> String
+serializeResponse (url, Left e) = "{ \"url\":\"" ++ url ++ "\", \"error\":\"" ++ show e ++ "\"}"
+serializeResponse (url, Right title) = "{ \"url\":\"" ++ url ++ "\", \"title\":\"" ++ title ++ "\"}"
+
+buildResponse :: L.ByteString -> Response
+buildResponse = responseLBS status200 [(hContentType, B.packChars "application/json")]
