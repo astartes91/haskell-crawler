@@ -8,8 +8,9 @@ module Client
 import           Control.Exception             (SomeException, displayException,
                                                 toException, try)
 import qualified Data.ByteString.Lazy.Internal as L
-import           Data.Either.Combinators       (mapLeft)
-import qualified Text.Parsec                   as P
+import           Data.Either.Combinators       (mapLeft, maybeToRight)
+
+import           Text.Regex                    (Regex, matchRegex, mkRegex)
 
 import           Network.Connection            (TLSSettings (..))
 
@@ -41,9 +42,11 @@ makeRequestE url = fmap (\x -> (url, mapLeft (const BadResponse) x)) ioEither
   where
     ioEither = try $ makeRequest url :: IO (Either SomeException L.ByteString)
 
--- mock parser function, only takes 30 chars
+pageTitleRegex :: Regex
+pageTitleRegex = mkRegex "<title[^>]*>([^<]+)</title>"
+
 parseTitle :: L.ByteString -> Either ClientError String
-parseTitle = mapLeft (const NoTitle) . P.parse (P.count 30 P.anyChar) ""
+parseTitle = maybeToRight NoTitle . fmap head . matchRegex pageTitleRegex . L.unpackChars
 
 getPageTitle :: Url -> IO (Url, Either ClientError String)
 getPageTitle = fmap (fmap (>>= parseTitle)) . makeRequestE
