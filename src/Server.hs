@@ -2,8 +2,8 @@ module Server
   ( startServer
   ) where
     
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Internal      as B
+import qualified Data.ByteString               as B
+import           Data.ByteString.Internal      (packChars)
 import qualified Data.ByteString.Lazy.Internal as L
 
 -- parsing, serialization
@@ -44,11 +44,11 @@ parseRequest req = do
   jsonRequestBody <- getRequestBody req
   maybe (fail "damn!") return (A.decodeStrict jsonRequestBody :: Maybe [String]) -- TODO: explicitly respond with 4xx
 
-getRequestBody :: Request -> IO BS.ByteString
-getRequestBody request = BS.concat <$> getChunks
+getRequestBody :: Request -> IO B.ByteString
+getRequestBody request = B.concat <$> getChunks
   where
     getChunks = getRequestBodyChunk request >>= \chunk ->
-        if chunk == BS.empty
+        if chunk == B.empty
         then pure []
         else (chunk:) <$> getChunks
 
@@ -60,4 +60,4 @@ createCrawlerResult (url, Left e) = Map.fromList [("url", url), ("error", show e
 createCrawlerResult (url, Right title) = Map.fromList [("url", url), ("title", title)]
 
 buildResponse :: L.ByteString -> Response
-buildResponse = responseLBS status200 [(hContentType, B.packChars "application/json")]
+buildResponse = responseLBS status200 [(hContentType, packChars "application/json")]
