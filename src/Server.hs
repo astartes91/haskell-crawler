@@ -33,7 +33,7 @@ startServer = do
 app :: Application
 app req respond = do
   urls <- parseRequest req :: IO [Url]
-  pageTitles <- mapM getPageTitle urls :: IO [(Url, Either ClientError String)]
+  pageTitles <- mapM (\x -> (fmap ((,) x) . getPageTitle) x) urls :: IO [(Url, Either ClientError String)] 
   let jsonResponse = serializeResponses pageTitles :: L.ByteString
   respond $ buildResponse jsonResponse
 

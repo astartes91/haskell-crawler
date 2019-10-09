@@ -37,8 +37,8 @@ makeRequest url = do
   manager <- newManager settings
   fmap responseBody (httpLbs request manager)
 
-makeRequestE :: Url -> IO (Url, Either ClientError L.ByteString)
-makeRequestE url = fmap (\x -> (url, mapLeft (const BadResponse) x)) ioEither
+makeRequestE :: Url -> IO (Either ClientError L.ByteString)
+makeRequestE url = fmap (\x -> mapLeft (const BadResponse) x) ioEither
   where
     ioEither = try $ makeRequest url :: IO (Either SomeException L.ByteString)
 
@@ -48,5 +48,5 @@ pageTitleRegex = mkRegex "<title[^>]*>([^<]+)</title>"
 parseTitle :: L.ByteString -> Either ClientError String
 parseTitle = maybeToRight NoTitle . fmap head . matchRegex pageTitleRegex . L.unpackChars
 
-getPageTitle :: Url -> IO (Url, Either ClientError String)
-getPageTitle = fmap (fmap (>>= parseTitle)) . makeRequestE
+getPageTitle :: Url -> IO (Either ClientError String)
+getPageTitle = fmap (>>= parseTitle) . makeRequestE
