@@ -1,7 +1,8 @@
 module Server
   ( startServer
   ) where
-
+    
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal      as B
 import qualified Data.ByteString.Lazy.Internal as L
 
@@ -14,7 +15,7 @@ import qualified Data.HashMap.Strict           as Map
 import           Network.HTTP.Types            (ResponseHeaders, hContentType,
                                                 status200)
 import           Network.Wai                   (Application, Request, Response,
-                                                requestBody, requestHeaders,
+                                                getRequestBodyChunk, requestHeaders,
                                                 requestMethod, responseLBS)
 import           Network.Wai.Handler.Warp      (run)
 
@@ -40,9 +41,16 @@ app req respond = do
 -- IO intentionally fails if parsing failed, which causes a response with error code
 parseRequest :: Request -> IO [Url]
 parseRequest req = do
-  let method = requestMethod req
-  jsonRequestBody <- requestBody req -- TODO: переделать на новый API: getRequestBodyChunk
+  jsonRequestBody <- getRequestBody req
   maybe (fail "damn!") return (A.decodeStrict jsonRequestBody :: Maybe [String]) -- TODO: explicitly respond with 4xx
+
+getRequestBody :: Request -> IO BS.ByteString
+getRequestBody request = BS.concat <$> getChunks
+  where
+    getChunks = getRequestBodyChunk request >>= \chunk ->
+        if chunk == BS.empty
+        then pure []
+        else (chunk:) <$> getChunks
 
 serializeResponses :: [(Url, Either ClientError PageTitle)] -> L.ByteString
 serializeResponses xs = A.encode $ map createCrawlerResult xs
