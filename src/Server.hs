@@ -1,8 +1,9 @@
 module Server
   ( startServer
   ) where
-
-import qualified Data.ByteString.Internal      as B
+    
+import qualified Data.ByteString               as B
+import           Data.ByteString.Internal      (packChars)
 import qualified Data.ByteString.Lazy.Internal as L
 
 -- parsing, serialization
@@ -14,7 +15,7 @@ import qualified Data.HashMap.Strict           as Map
 import           Network.HTTP.Types            (ResponseHeaders, hContentType,
                                                 status200)
 import           Network.Wai                   (Application, Request, Response,
-                                                requestBody, requestHeaders,
+                                                getRequestBodyChunk, requestHeaders,
                                                 requestMethod, responseLBS)
 import           Network.Wai.Handler.Warp      (run)
 
@@ -40,9 +41,16 @@ app req respond = do
 -- IO intentionally fails if parsing failed, which causes a response with error code
 parseRequest :: Request -> IO [Url]
 parseRequest req = do
-  let method = requestMethod req
-  jsonRequestBody <- requestBody req -- TODO: переделать на новый API: getRequestBodyChunk
+  jsonRequestBody <- getRequestBody req
   maybe (fail "damn!") return (A.decodeStrict jsonRequestBody :: Maybe [String]) -- TODO: explicitly respond with 4xx
+
+getRequestBody :: Request -> IO B.ByteString
+getRequestBody request = B.concat <$> getChunks
+  where
+    getChunks = getRequestBodyChunk request >>= \chunk ->
+        if chunk == B.empty
+        then pure []
+        else (chunk:) <$> getChunks
 
 serializeResponses :: [(Url, Either ClientError PageTitle)] -> L.ByteString
 serializeResponses xs = A.encode $ map createCrawlerResult xs
@@ -52,4 +60,4 @@ createCrawlerResult (url, Left e) = Map.fromList [("url", url), ("error", show e
 createCrawlerResult (url, Right title) = Map.fromList [("url", url), ("title", title)]
 
 buildResponse :: L.ByteString -> Response
-buildResponse = responseLBS status200 [(hContentType, B.packChars "application/json")]
+buildResponse = responseLBS status200 [(hContentType, packChars "application/json")]

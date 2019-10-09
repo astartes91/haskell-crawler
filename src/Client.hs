@@ -14,7 +14,7 @@ import           Text.Regex                    (Regex, matchRegex, mkRegex)
 
 import           Network.Connection            (TLSSettings (..))
 
-import           Network.HTTP.Conduit          (httpLbs, mkManagerSettings,
+import           Network.HTTP.Conduit          (httpLbs, tlsManagerSettings,
                                                 newManager, parseRequest,
                                                 responseBody)
 
@@ -33,8 +33,7 @@ data ClientError
 makeRequest :: String -> IO L.ByteString
 makeRequest url = do
   request <- parseRequest url
-  let settings = mkManagerSettings (TLSSettingsSimple False False False) Nothing
-  manager <- newManager settings
+  manager <- newManager tlsManagerSettings
   fmap responseBody (httpLbs request manager)
 
 makeRequestE :: Url -> IO (Url, Either ClientError L.ByteString)
