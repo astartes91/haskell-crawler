@@ -8,6 +8,7 @@ module Client
 import           Control.Exception             (SomeException, displayException,
                                                 toException, try)
 import qualified Data.ByteString.Lazy.Internal as L
+import qualified Data.Text as T
 import           Data.Either.Combinators       (mapLeft, maybeToRight)
 
 import           Text.Regex                    (Regex, matchRegex, mkRegex)
@@ -32,7 +33,16 @@ data ClientError
 
 makeRequest :: String -> IO L.ByteString
 makeRequest url = do
-  request <- parseRequest url
+  let textUrl = T.pack url
+--  let newUrl = 
+--    case T.isPrefixOf(T.pack "http://" textUrl) || T.isPrefixOf(T.pack "https://" textUrl) of
+--    True -> url
+--    _ -> "http://" ++ url 
+--    if(T.isPrefixOf(T.pack "http://" textUrl) || T.isPrefixOf(T.pack "https://" textUrl))
+--      then url  
+--    else "http://" ++ url 
+  let newUrl = "http://" ++ url 
+  request <- parseRequest newUrl
   manager <- newManager tlsManagerSettings
   fmap responseBody (httpLbs request manager)
 
