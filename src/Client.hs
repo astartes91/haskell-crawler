@@ -8,7 +8,7 @@ module Client
 import           Control.Exception             (SomeException, displayException,
                                                 toException, try)
 import qualified Data.ByteString.Lazy.Internal as L
-import qualified Data.Text as T
+import Data.List
 import           Data.Either.Combinators       (mapLeft, maybeToRight)
 
 import           Text.Regex                    (Regex, matchRegex, mkRegex)
@@ -31,17 +31,9 @@ data ClientError
   | NoTitle
   deriving (Show)
 
-makeRequest :: String -> IO L.ByteString
+makeRequest :: Url -> IO L.ByteString
 makeRequest url = do
-  let textUrl = T.pack url
---  let newUrl = 
---    case T.isPrefixOf(T.pack "http://" textUrl) || T.isPrefixOf(T.pack "https://" textUrl) of
---    True -> url
---    _ -> "http://" ++ url 
---    if(T.isPrefixOf(T.pack "http://" textUrl) || T.isPrefixOf(T.pack "https://" textUrl))
---      then url  
---    else "http://" ++ url 
-  let newUrl = "http://" ++ url 
+  let newUrl = addHttpScheme url
   request <- parseRequest newUrl
   manager <- newManager tlsManagerSettings
   fmap responseBody (httpLbs request manager)
@@ -59,3 +51,9 @@ parseTitle = maybeToRight NoTitle . fmap head . matchRegex pageTitleRegex . L.un
 
 getPageTitle :: Url -> IO (Url, Either ClientError String)
 getPageTitle = fmap (fmap (>>= parseTitle)) . makeRequestE
+
+addHttpScheme :: Url -> Url
+addHttpScheme url = if checkHttpScheme url then url else "http://" ++ url
+
+checkHttpScheme :: Url -> Bool
+checkHttpScheme url = isPrefixOf "http://" url || isPrefixOf "https://" url
