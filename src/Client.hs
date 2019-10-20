@@ -5,15 +5,17 @@ module Client
   , getPageTitle
   ) where
 
-import           Control.Exception             (SomeException, displayException,
-                                                toException, try)
+import           Control.Exception             (Exception, SomeException, displayException,
+                                                toException, try, throw)
+import           Data.Typeable
 import qualified Data.ByteString.Lazy.Internal as L
-import Data.List
+import           Data.List                     (isPrefixOf)
 import           Data.Either.Combinators       (mapLeft, maybeToRight)
 
 import           Text.Regex                    (Regex, matchRegex, mkRegex)
 
 import           Network.Connection            (TLSSettings (..))
+import           Network.URI                   (isURI)
 
 import           Network.HTTP.Conduit          (httpLbs, tlsManagerSettings,
                                                 newManager, parseRequest,
@@ -29,11 +31,14 @@ data ClientError
   | BadResponse
   | Redirect Url
   | NoTitle
-  deriving (Show)
+  deriving (Show, Typeable)
+
+instance Exception ClientError
 
 makeRequest :: Url -> IO L.ByteString
 makeRequest url = do
   let newUrl = addHttpScheme url
+  let _ = if not $ isURI newUrl then throw (toException InvalidUrl) else ()
   request <- parseRequest newUrl
   manager <- newManager tlsManagerSettings
   fmap responseBody (httpLbs request manager)
@@ -57,3 +62,8 @@ addHttpScheme url = if checkHttpScheme url then url else "http://" ++ url
 
 checkHttpScheme :: Url -> Bool
 checkHttpScheme url = isPrefixOf "http://" url || isPrefixOf "https://" url
+
+--mapException :: Exception -> ClientError
+--mapException e = case e of
+--  InvalidUrl -> InvalidUrl
+--  _ -> BadResponse
