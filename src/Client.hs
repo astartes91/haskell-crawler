@@ -38,7 +38,7 @@ instance Exception ClientError
 makeRequest :: Url -> IO L.ByteString
 makeRequest url = do
   let newUrl = addHttpScheme url
-  let _ = if not $ isURI newUrl then throw (toException InvalidUrl) else ()
+  let _ = if not $ isURI newUrl then throw InvalidUrl else ()
   request <- parseRequest newUrl
   manager <- newManager tlsManagerSettings
   fmap responseBody (httpLbs request manager)
