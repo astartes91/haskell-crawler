@@ -5,21 +5,22 @@ module Client
   , getPageTitle
   ) where
 
-import           Control.Exception             (Exception, SomeException, displayException,
-                                                toException, try, throw)
-import           Data.Typeable
+import           Control.Exception             (Exception, SomeException,
+                                                displayException, throw,
+                                                toException, try)
 import qualified Data.ByteString.Lazy.Internal as L
-import           Data.List                     (isPrefixOf)
 import           Data.Either.Combinators       (mapLeft, maybeToRight)
+import           Data.List                     (isPrefixOf)
+import           Data.Typeable
 
 import           Text.Regex                    (Regex, matchRegex, mkRegex)
 
 import           Network.Connection            (TLSSettings (..))
 import           Network.URI                   (isURI)
 
-import           Network.HTTP.Conduit          (httpLbs, tlsManagerSettings,
-                                                newManager, parseRequest,
-                                                responseBody)
+import           Network.HTTP.Conduit          (httpLbs, newManager,
+                                                parseRequest, responseBody,
+                                                tlsManagerSettings)
 
 type Url = String -- TODO: refactor to newtype
 
@@ -61,11 +62,13 @@ getPageTitle :: Url -> IO (Url, Either ClientError String)
 getPageTitle = fmap (fmap (>>= parseTitle)) . makeRequestE
 
 addHttpScheme :: Url -> Url
-addHttpScheme url = if checkHttpScheme url then url else "http://" ++ url
+addHttpScheme url =
+  if checkHttpScheme url
+    then url
+    else "http://" ++ url
 
 checkHttpScheme :: Url -> Bool
 checkHttpScheme url = isPrefixOf "http://" url || isPrefixOf "https://" url
-
 --mapException :: Exception -> ClientError
 --mapException e = case e of
 --  InvalidUrl -> InvalidUrl
