@@ -33,6 +33,7 @@ dependencies:
 - network >= 2.8.0.1 # http client
 - network-uri >= 2.6.1.0
 - connection >= 0.3.1 # http client
+- async >= 2.2.2 # concurrent execution
 
 library:
   source-dirs: src

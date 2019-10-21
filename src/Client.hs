@@ -37,11 +37,14 @@ instance Exception ClientError
 
 makeRequest :: Url -> IO L.ByteString
 makeRequest url = do
+  putStrLn $ "--> " ++ url
   let newUrl = addHttpScheme url
   --let _ = if not $ isURI newUrl then throw InvalidUrl else () -- не работает выброс кастомного исключения!
   request <- parseRequest newUrl
   manager <- newManager tlsManagerSettings
-  fmap responseBody (httpLbs request manager)
+  res <- fmap responseBody (httpLbs request manager)
+  putStrLn $ "<-- " ++ url
+  return res
 
 makeRequestE :: Url -> IO (Url, Either ClientError L.ByteString)
 makeRequestE url = fmap (\x -> (url, mapLeft (const BadResponse) x)) ioEither

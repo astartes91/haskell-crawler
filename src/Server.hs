@@ -21,6 +21,8 @@ import           Network.Wai.Handler.Warp      (run)
 
 import           Client
 
+import Control.Concurrent.Async (mapConcurrently)
+
 -- configuration
 portNumber :: Int
 portNumber = 8080
@@ -34,7 +36,7 @@ startServer = do
 app :: Application
 app req respond = do
   urls <- parseRequest req :: IO [Url]
-  pageTitles <- mapM getPageTitle urls :: IO [(Url, Either ClientError String)]
+  pageTitles <- mapConcurrently getPageTitle urls :: IO [(Url, Either ClientError String)]
   let jsonResponse = serializeResponses pageTitles :: L.ByteString
   respond $ buildResponse jsonResponse
 
