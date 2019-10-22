@@ -18,9 +18,34 @@ stack build --exec haskell-crawler-exe
 
 # test it!
 curl "http://localhost:8080/"\
-      --header "Content-Type: application/json"\
-      --request POST\
-      --data '["https://ya.ru", "https://google.com"]'
+  --header "Content-Type: application/json"\
+  --request POST\
+  --data '[
+"https://twitter.com",
+"https://google.com",
+"https://ya.ru",
+"https://yandex.ru",
+"https://kremlin.ru",
+"https://tutu.ru",
+"https://s7.ru",
+"https://technocity.ru",
+"https://avito.ru",
+"https://apple.ru",
+"https://interfacelift.com",
+"https://haskell.org",
+"https://elm-lang.org",
+"https://telegram.org",
+"https://wikipedia.org",
+"https://mozilla.com",
+"https://samsung.com",
+"https://benq.com",
+"https://rambler.ru",
+"https://zte.com",
+"https://hp.com"
+]'
+
+
+
 ```
 
 ## Other useful commands
